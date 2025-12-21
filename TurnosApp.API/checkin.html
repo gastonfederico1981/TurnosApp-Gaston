@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>WaitLess - Check-in Virtual</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f4f8; padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .container { max-width: 450px; width: 100%; }
+        .brand { text-align: center; font-size: 30px; font-weight: bold; color: #1a73e8; margin-bottom: 30px; }
+        .brand span { color: #27ae60; font-weight: 300; }
+        .card { background: white; border-radius: 12px; padding: 25px; box-shadow: 0 6px 20px rgba(0,0,0,0.15); }
+        h2 { text-align: center; color: #333; font-size: 1.4rem; margin-bottom: 25px; }
+        .form-group { display: flex; flex-direction: column; gap: 15px; }
+        input, select { padding: 14px; border: 1px solid #ccc; border-radius: 8px; font-size: 16px; transition: border-color 0.3s; }
+        input:focus, select:focus { border-color: #1a73e8; outline: none; }
+        .btn-checkin { padding: 16px; background: #1a73e8; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: background 0.3s ease; font-size: 1.1rem; margin-top: 10px; }
+        .btn-checkin:hover { background: #1557b0; }
+        .result-box { display: none; background: #d4edda; color: #155724; padding: 20px; border-radius: 8px; text-align: center; margin-top: 20px; border: 1px solid #c3e6cb; }
+        .token-display { font-size: 1.8em; font-weight: 700; color: #27ae60; margin: 10px 0; display: block; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="brand">Wait<span>Less</span></div>
+    
+    <div class="card">
+        <h2>📱 Auto-Registro y Fila de Espera</h2>
+        <div class="form-group">
+            <input type="text" id="nombre" placeholder="Tu Nombre Completo" required>
+            <input type="text" id="tel" placeholder="WhatsApp (Opcional)">
+            <select id="docId">
+                <option value="1">Dr. Gaston Carranza (Cardiología)</option>
+            </select>
+            <button class="btn-checkin" onclick="iniciarCheckin()">OBTENER MI TURNO</button>
+        </div>
+    </div>
+    
+    <div id="resultado" class="result-box">
+        </div>
+</div>
+
+<script>
+    const API_BASE = 'http://localhost:5192/api/Doctor'; 
+
+    async function iniciarCheckin() {
+        const nombreInput = document.getElementById('nombre');
+        const telInput = document.getElementById('tel');
+        const docIdInput = document.getElementById('docId');
+        const resultadoDiv = document.getElementById('resultado');
+        
+        // Validación
+        if (!nombreInput.value) {
+            alert("Por favor, ingresa tu nombre completo.");
+            return;
+        }
+
+        const data = {
+            pacienteNombre: nombreInput.value,
+            pacienteTelefono: telInput.value,
+            doctorId: parseInt(docIdInput.value)
+            // NOTA: Se crea como PENDIENTE (demanda espontánea)
+        };
+
+        try {
+            const res = await fetch(`${API_BASE}/registrar`, { 
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            if(res.ok) {
+                const nuevoTurno = await res.json(); 
+                
+                // Mostrar el token y el enlace
+                resultadoDiv.style.backgroundColor = '#d4edda';
+                resultadoDiv.style.display = 'block';
+                resultadoDiv.innerHTML = `
+                    <h3>✅ Turno Registrado</h3>
+                    <p>¡Gracias, ${nuevoTurno.pacienteNombre}!</p>
+                    <p>Tu **TOKEN DE ACCESO** es:</p>
+                    <span class="token-display">${nuevoTurno.tokenAcceso}</span>
+                    <p>Úsalo en la página de estado para ver tu posición en tiempo real.</p>
+                    <a href="paciente.html?token=${nuevoTurno.tokenAcceso}" style="color: #1a73e8; font-weight: bold;">Ver mi estado ahora</a>
+                `;
+
+                // Limpiar campos después del éxito
+                nombreInput.value = '';
+                telInput.value = '';
+
+            } else {
+                // Manejo de errores de la API
+                const errorText = await res.text();
+                resultadoDiv.style.backgroundColor = '#f8d7da';
+                resultadoDiv.style.color = '#721c24';
+                resultadoDiv.style.display = 'block';
+                resultadoDiv.innerHTML = `<p>❌ Error al registrar el turno: ${res.status}.</p>`;
+            }
+        } catch (error) {
+            // Manejo de errores de red
+            resultadoDiv.style.backgroundColor = '#f8d7da';
+            resultadoDiv.style.color = '#721c24';
+            resultadoDiv.style.display = 'block';
+            resultadoDiv.innerHTML = `<p>❌ No se pudo conectar con el servicio. Intenta más tarde.</p>`;
+        }
+    }
+</script>
+</body>
+</html>

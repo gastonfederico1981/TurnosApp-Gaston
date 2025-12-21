@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>WaitLess - Centro de Recepción</title>
+    <style>
+        /* ... (Tus estilos CSS aquí, sin cambios) ... */
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f4f8; padding: 20px; }
+        .container { max-width: 900px; margin: auto; }
+        .brand { text-align: center; font-size: 32px; font-weight: bold; color: #1a73e8; margin-bottom: 20px; }
+        .brand span { color: #27ae60; font-weight: 300; }
+        .card { background: white; border-radius: 12px; padding: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 20px; animation: fadeIn 0.6s ease-out; }
+        h2 { border-bottom: 2px solid #f0f4f8; padding-bottom: 10px; color: #333; font-size: 1.1rem; }
+        .form-group { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; }
+        input, select { padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; }
+        .btn-ingresar { grid-column: span 2; padding: 15px; background: #1a73e8; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: background 0.3s ease; }
+        .btn-ingresar:hover { background: #1557b0; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th { text-align: left; padding: 12px; background: #f8f9fa; color: #666; }
+        td { padding: 12px; border-bottom: 1px solid #eee; }
+        tr { animation: slideIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+        .success-msg { display: none; background: #d4edda; color: #155724; padding: 10px; border-radius: 8px; text-align: center; margin-bottom: 15px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="brand">Wait<span>Less</span></div>
+
+    <div class="card">
+        <h2>📝 Registro Manual (Demanda Espontánea)</h2>
+        <div id="msg" class="success-msg">¡Paciente ingresado correctamente!</div>
+        <div class="form-group">
+            <input type="text" id="nombre" placeholder="Nombre completo">
+            <input type="text" id="tel" placeholder="WhatsApp (+54...)">
+            <select id="docId">
+                <option value="1">Dr. Gaston Carranza (Cardiología)</option>
+            </select>
+            <button class="btn-ingresar" onclick="enviarTurno()">DAR INGRESO A SALA</button>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>📅 Agenda de Turnos Programados</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Hora</th>
+                    <th>Paciente</th>
+                    <th>Acción</th>
+                </tr>
+            </thead>
+            <tbody id="lista-turnos-agenda">
+                </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    // URL BASE: Apunta al controlador funcional 'Doctor'
+    const API_BASE = 'http://localhost:5192/api/Doctor'; 
+
+    async function enviarTurno() {
+        const nombreInput = document.getElementById('nombre');
+        const telInput = document.getElementById('tel');
+        const docIdInput = document.getElementById('docId');
+        
+        // 1. Validación simple
+        if (!nombreInput.value) {
+            alert("El nombre del paciente es obligatorio.");
+            return;
+        }
+
+        // 2. Preparar el objeto de datos (Recuperando el valor de los campos)
+        const data = {
+            pacienteNombre: nombreInput.value,
+            pacienteTelefono: telInput.value,
+            doctorId: parseInt(docIdInput.value)
+        };
+
+        try {
+            // 3. ENVIAR POST a la ruta de registro
+            const res = await fetch(`${API_BASE}/registrar`, { 
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            if(res.ok) {
+                // 4. Leer la respuesta de la API (contiene el Token)
+                const nuevoTurno = await res.json(); 
+
+                // 5. Mostrar el Token al usuario en el mensaje de éxito
+                const msgDiv = document.getElementById('msg');
+                msgDiv.style.backgroundColor = '#d4edda'; // Color de éxito
+                msgDiv.innerHTML = `
+                    ¡Paciente ingresado correctamente! 
+                    <br>Su **TOKEN DE ACCESO** es: 
+                    <strong style="font-size: 1.1em; color: #155724;">${nuevoTurno.tokenAcceso}</strong>
+                `;
+                msgDiv.style.display = 'block';
+                
+                // 6. Limpiar campos
+                nombreInput.value = '';
+                telInput.value = '';
+                
+                // Ocultar mensaje después de 8 segundos para dar tiempo a anotar el token
+                setTimeout(() => msgDiv.style.display = 'none', 8000); 
+
+            } else {
+                // Manejo de errores HTTP
+                const errorText = await res.text();
+                console.error('Error HTTP:', res.status, errorText);
+                alert(`Error al registrar (Código ${res.status}). Revisa la consola (F12).`);
+            }
+        } catch (error) {
+            // Manejo de errores de red
+            console.error('Error de red al enviar turno:', error);
+            alert('❌ No se pudo conectar con la API. ¿Está encendida?');
+        }
+    }
+
+    // Nota: Las funciones de agenda (cargarAgenda, confirmar) están comentadas porque no son necesarias para este proyecto.
+</script>
+</body>
+</html>

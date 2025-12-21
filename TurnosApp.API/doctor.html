@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>WaitLess - Panel Doctor</title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: #2c3e50; 
+            color: white; 
+            padding: 30px; 
+        }
+        h2 { 
+            text-align: center; 
+            color: #f1c40f; 
+            margin-bottom: 30px;
+        }
+        #lista-turnos {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .btn-atender { 
+            background: #27ae60; 
+            color: white; 
+            border: none; 
+            padding: 10px 20px; 
+            border-radius: 5px; 
+            cursor: pointer; 
+            transition: background 0.3s;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+        .btn-atender:hover { 
+            background: #2ecc71; 
+        }
+        .mensaje { 
+            text-align: center; 
+            margin-top: 50px; 
+            color: #bdc3c7; 
+            font-size: 1.1em;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #34495e;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        th {
+            background: #1a252f;
+            color: #f1c40f;
+            padding: 15px;
+        }
+        td {
+            padding: 15px;
+            text-align: center;
+            border-bottom: 1px solid #444;
+        }
+        .badge {
+            background: #e67e22;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>PANEL DE ATENCIÓN DE PACIENTES</h2>
+    
+    <div id="lista-turnos">
+        <p class="mensaje">Cargando lista de turnos...</p>
+    </div>
+
+    <script>
+        const PUERTO = "5198"; 
+        const DOCTOR_ID = 1;
+
+        async function cargarListaDoctor() {
+            const contenedor = document.getElementById('lista-turnos');
+            try {
+                const respuesta = await fetch(`http://localhost:${PUERTO}/api/turnos/doctor/${DOCTOR_ID}`);
+                
+                if (!respuesta.ok) throw new Error("Servidor no responde");
+
+                const turnos = await respuesta.json();
+
+                if (turnos.length === 0) {
+                    contenedor.innerHTML = "<p class='mensaje'>No hay pacientes en espera para hoy.</p>";
+                    return;
+                }
+
+                let tablaHtml = `
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Paciente</th>
+                                <th>Estado</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${turnos.map(t => `
+                                <tr>
+                                    <td><strong>${t.pacienteNombre}</strong></td>
+                                    <td><span class="badge">${t.estado}</span></td>
+                                    <td><button onclick="atender(${t.id})" class="btn-atender">Llamar</button></td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>`;
+                    
+                contenedor.innerHTML = tablaHtml;
+
+            } catch (error) {
+                console.error("Error:", error);
+                contenedor.innerHTML = `<p class='mensaje' style='color: #e74c3c;'>⚠️ Error de conexión. Revisa que la API esté encendida en el puerto ${PUERTO}.</p>`;
+            }
+        }
+
+        async function atender(turnoId) {
+            try {
+                // Ruta corregida para coincidir con el backend
+                const respuesta = await fetch(`http://localhost:${PUERTO}/api/turnos/${turnoId}/atender`, { 
+                    method: 'PUT' 
+                });
+
+                if (respuesta.ok) {
+                    alert("📢 Llamando al paciente...");
+                    cargarListaDoctor(); 
+                } else {
+                    alert("El servidor no pudo procesar la llamada (404/500).");
+                }
+            } catch (err) {
+                console.error(err);
+                alert("Error al intentar conectar con la API.");
+            }
+        }
+
+        // Carga inicial
+        cargarListaDoctor();
+        // Refresco automático cada 10 segundos
+        setInterval(cargarListaDoctor, 10000); 
+    </script>
+</body>
+</html>

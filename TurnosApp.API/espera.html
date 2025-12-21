@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>WaitLess - Sala de Espera</title>
+    <style>
+        body { 
+            font-family: 'Arial Black', sans-serif; 
+            background: #1a252f; 
+            color: white; 
+            margin: 0; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            height: 100vh; 
+            overflow: hidden;
+        }
+        .header {
+            position: absolute;
+            top: 20px;
+            color: #f1c40f;
+            font-size: 2em;
+        }
+        .llamado-container {
+            background: #2c3e50;
+            padding: 50px;
+            border-radius: 20px;
+            border: 5px solid #27ae60;
+            text-align: center;
+            box-shadow: 0 0 50px rgba(39, 174, 96, 0.5);
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        .paciente-nombre {
+            font-size: 5em;
+            margin: 0;
+            color: #ecf0f1;
+        }
+        .instruccion {
+            font-size: 2.5em;
+            color: #2ecc71;
+            margin-top: 20px;
+        }
+        .footer {
+            position: absolute;
+            bottom: 20px;
+            font-size: 1.2em;
+            color: #7f8c8d;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">SALA DE ESPERA - POR FAVOR AGUARDE</div>
+
+    <div id="pantalla-llamado" class="llamado-container">
+        <p style="font-size: 1.5em; color: #bdc3c7;">LLAMANDO A:</p>
+        <h1 id="nombre-paciente" class="paciente-nombre">---</h1>
+        <div class="instruccion">PASE AL CONSULTORIO 1</div>
+    </div>
+
+    <div class="footer" id="status-api">Conectando con la API...</div>
+
+    <audio id="sonido-ding">
+        <source src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" type="audio/mpeg">
+    </audio>
+
+    <script>
+        const API_URL = "http://localhost:5198/api/turnos/doctor/1";
+        let ultimoPacienteId = null;
+
+        async function chequearLlamado() {
+            try {
+                // Buscamos los turnos del doctor
+                const res = await fetch(API_URL);
+                const turnos = await res.json();
+                
+                // Buscamos si hay alguien "EN_CONSULTA" (recién llamado)
+                // Nota: Tu API debe devolver también los EN_CONSULTA para que esto funcione
+                const siendoAtendido = turnos.find(t => t.estado === "EN_CONSULTA");
+
+                if (siendoAtendido) {
+                    document.getElementById('nombre-paciente').innerText = siendoAtendido.pacienteNombre.toUpperCase();
+                    
+                    // Si es un paciente nuevo, hacemos sonar el Ding
+                    if (ultimoPacienteId !== siendoAtendido.id) {
+                        document.getElementById('sonido-ding').play();
+                        ultimoPacienteId = siendoAtendido.id;
+                    }
+                }
+                document.getElementById('status-api').innerText = "Sistema en línea";
+            } catch (error) {
+                document.getElementById('status-api').innerText = "⚠️ Error de conexión";
+            }
+        }
+
+        // Revisar cada 3 segundos
+        setInterval(chequearLlamado, 3000);
+        chequearLlamado();
+    </script>
+</body>
+</html>

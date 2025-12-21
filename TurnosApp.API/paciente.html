@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>WaitLess - Estado de mi Turno</title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: #f8f8f8; 
+            color: #333; 
+            padding: 40px; 
+            text-align: center; 
+        }
+        .card {
+            max-width: 500px;
+            margin: 20px auto;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+        h2 { color: #1a73e8; margin-bottom: 25px; }
+        input[type="text"] {
+            padding: 12px;
+            width: 80%;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 1.1em;
+            text-align: center;
+        }
+        button {
+            background: #2ecc71;
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background 0.3s;
+        }
+        button:hover { background: #27ae60; }
+        .resultado {
+            margin-top: 30px;
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+        .estado-pendiente { background-color: #f1c40f33; color: #e67e22; padding: 5px; border-radius: 5px; }
+        .estado-atendido { background-color: #2ecc7133; color: #27ae60; padding: 5px; border-radius: 5px; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>Consulta el Estado de tu Turno</h2>
+    <p>Ingresa el Token de Acceso que recibiste en Recepción:</p>
+    
+    <input type="text" id="tokenInput" placeholder="Ej: a1b2c3d4">
+    <button onclick="consultarEstado()">Consultar Ahora</button>
+    
+    <div id="resultado" class="resultado" style="display:none;">
+        </div>
+</div>
+
+<script>
+    const API_BASE_URL = 'http://localhost:5192/api/Doctor/estado-turno/';
+    const resultadoDiv = document.getElementById('resultado');
+    const tokenInput = document.getElementById('tokenInput');
+
+    async function consultarEstado() {
+        const token = tokenInput.value.trim();
+        if (!token) {
+            alert("Por favor, ingresa tu Token de Acceso.");
+            return;
+        }
+
+        try {
+            const response = await fetch(API_BASE_URL + token);
+            
+            if (response.ok) {
+                const data = await response.json();
+                mostrarResultado(data);
+            } else if (response.status === 404) {
+                mostrarError("Token no válido o no encontrado.");
+            } else {
+                mostrarError("Error del servidor al consultar el turno.");
+            }
+
+        } catch (error) {
+            console.error("Error de conexión:", error);
+            mostrarError("Error de red. ¿La API está encendida?");
+        }
+    }
+
+    function mostrarResultado(data) {
+    resultadoDiv.style.display = 'block';
+    let statusClass = data.estado.toLowerCase();
+    
+    let mensaje;
+
+    if (statusClass === 'pendiente') {
+        const horaEstimada = data.horaEstimadaAtencion; // Capturamos la hora
+        
+        if (data.posicionEnFila === 0) {
+            mensaje = `
+                <p style="font-size: 1.5em; color: #e67e22;">¡ERES EL SIGUIENTE!</p>
+                <p>Tu hora estimada de atención es <strong>${horaEstimada}</strong>.</p>
+                <p>Por favor, acércate a la puerta de ${data.doctor}.</p>
+            `;
+        } else {
+            mensaje = `
+                <p>Hay <strong>${data.posicionEnFila}</strong> paciente(s) delante de ti.</p>
+                <p>Tu hora estimada de atención es aproximadamente <strong>${horaEstimada}</strong>.</p>
+            `;
+        }
+    } else if (statusClass === 'atendido') {
+        mensaje = `<p style="font-size: 1.5em; color: #27ae60;">✅ Turno finalizado.</p>`;
+    } else {
+        mensaje = `<p>Estado desconocido: ${data.estado}</p>`;
+    }
+    
+    resultadoDiv.innerHTML = `
+        <h3>Hola, ${data.pacienteNombre}</h3>
+        <p>Estado actual: <span class="estado-${statusClass}">${data.estado.toUpperCase()}</span></p>
+        ${mensaje}
+    `;
+}
+
+    function mostrarError(msg) {
+        resultadoDiv.style.display = 'block';
+        resultadoDiv.innerHTML = `<p style="color: #e74c3c; font-weight: bold;">${msg}</p>`;
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>WaitLess - Monitor Sala de Espera</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #2c3e50; color: white; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        .header { text-align: center; margin-bottom: 30px; }
+        .header h1 { font-size: 2.5em; color: #ecf0f1; margin-bottom: 5px; }
+        .header p { font-size: 1.2em; color: #bdc3c7; }
+        .brand span { color: #2ecc71; font-weight: bold; }
+        
+        .main-container { width: 90%; max-width: 1000px; }
+        
+        .next-up { background: #34495e; padding: 20px; border-radius: 10px; margin-bottom: 30px; text-align: center; }
+        .next-up h3 { color: #2ecc71; margin-bottom: 10px; font-size: 1.5em; }
+        .next-up .patient-name { font-size: 3em; font-weight: bold; color: #f1c40f; margin: 5px 0; }
+
+        table { width: 100%; border-collapse: collapse; background: #34495e; border-radius: 10px; overflow: hidden; }
+        thead { background: #1abc9c; color: white; }
+        th, td { padding: 15px; text-align: left; border-bottom: 1px solid #3e5a70; }
+        th { font-size: 1.1em; }
+        tbody tr:nth-child(even) { background: #3e5a70; }
+        tbody tr:hover { background: #4a637a; cursor: default; }
+        
+        .empty-message { text-align: center; padding: 40px; font-size: 1.5em; color: #e74c3c; background: #34495e; border-radius: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>Monitor de Sala de Espera <span class="brand">WaitLess</span></h1>
+    <p>Pacientes en fila (Demora estimada por paciente: 15 minutos)</p>
+</div>
+
+<div class="main-container">
+    <div id="loading-status" class="empty-message">Cargando turnos...</div>
+
+    <div class="next-up">
+        <h3>Llamando Ahora:</h3>
+        <p class="patient-name" id="current-patient">Cargando...</p>
+    </div>
+
+    <h2>Fila de Espera Activa</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Nombre del Paciente</th>
+                <th>Hora Estimada</th>
+                <th>Estado</th>
+            </tr>
+        </thead>
+        <tbody id="lista-pacientes-monitor">
+            </tbody>
+    </table>
+
+    <div id="empty-queue" class="empty-message" style="display: none;">🎉 No hay pacientes en la fila de espera.</div>
+</div>
+
+<script>
+    // NOTA IMPORTANTE: Si vas a desplegar online, RECUERDA cambiar esta URL
+   const API_BASE_URL = 'https://localhost:7198/api/Turnos';
+// a tu puerto real
+// const API_BASE_URL = 'https://localhost:XXXX/api/Turnos';
+    const TIEMPO_ATENCION_MINUTOS = 15; // Usado para la estimación
+
+    // Formatea la fecha para mostrar solo la hora (HH:MM)
+    function formatTime(dateString) {
+        const date = new Date(dateString);
+        return date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    // Calcula la hora estimada de atención
+    function calcularHoraEstimada(index) {
+        const tiempoEsperaTotal = index * TIEMPO_ATENCION_MINUTOS;
+        const horaActual = new Date();
+        horaActual.setMinutes(horaActual.getMinutes() + tiempoEsperaTotal);
+        
+        return formatTime(horaActual);
+    }
+
+    async function cargarListaCompleta() {
+        const listaBody = document.getElementById('lista-pacientes-monitor');
+        const currentPatientDisplay = document.getElementById('current-patient');
+        const emptyMessage = document.getElementById('empty-queue');
+        const loadingStatus = document.getElementById('loading-status');
+        
+        listaBody.innerHTML = ''; // Limpiar la tabla
+        emptyMessage.style.display = 'none';
+        loadingStatus.style.display = 'block';
+
+        try {
+            // USANDO LA RUTA COMPLETA: /turnos-hoy/completos
+            const res = await fetch(`${API_BASE}/turnos-hoy/completos`); 
+            
+            loadingStatus.style.display = 'none'; // Ocultar al obtener respuesta
+
+            if (!res.ok) {
+                // Error 400 o 500 del servidor
+                listaBody.innerHTML = `<tr><td colspan="4">❌ Error de Servidor. Código: ${res.status}. Revise la consola de la API (C#).</td></tr>`;
+                currentPatientDisplay.textContent = 'ERROR API';
+                return;
+            }
+            
+            const turnos = await res.json();
+            
+            if (turnos.length === 0) {
+                emptyMessage.style.display = 'block';
+                currentPatientDisplay.textContent = 'LIBRE';
+                return;
+            }
+
+            // 1. Mostrar al paciente que está siendo llamado AHORA
+            const siguiente = turnos[0];
+            currentPatientDisplay.textContent = siguiente.pacienteNombre;
+
+            // 2. Llenar la tabla con el resto de la fila
+            turnos.forEach((turno, index) => {
+                const row = listaBody.insertRow();
+                const posicion = index + 1;
+
+                // Columna 1: Posición
+                row.insertCell(0).textContent = posicion;
+                
+                // Columna 2: Nombre
+                row.insertCell(1).textContent = turno.pacienteNombre;
+
+                // Columna 3: Hora Estimada (usando el índice)
+                row.insertCell(2).textContent = calcularHoraEstimada(index);
+
+                // Columna 4: Estado 
+                let estadoText = turno.estado;
+                if (index === 0) {
+                     row.style.backgroundColor = '#f1c40f'; // Resaltar el primero
+                     estadoText = 'LLAMANDO';
+                }
+                row.insertCell(3).textContent = estadoText;
+            });
+
+        } catch (error) {
+            // Error de conexión de red (la API no responde o no está corriendo)
+            loadingStatus.textContent = '⚠️ Error de Conexión. Revise la API.';
+            currentPatientDisplay.textContent = 'CONEXIÓN PERDIDA';
+            loadingStatus.style.display = 'block';
+            console.error('Error cargando turnos (Red/CORS):', error);
+        }
+    }
+
+    // Cargar la lista al inicio y cada 5 segundos para actualizar
+    cargarListaCompleta();
+    setInterval(cargarListaCompleta, 5000); 
+</script>
+</body>
+</html>
