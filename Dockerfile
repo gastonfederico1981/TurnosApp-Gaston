@@ -1,17 +1,19 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /app
 
-# Copia toda la solución para encontrar los proyectos
+# 1. Copiamos TODO el contenido al contenedor
 COPY . ./
-RUN dotnet restore TurnosApp.sln
 
-# Publica específicamente el proyecto API
-RUN dotnet publish TurnosApp.API/TurnosApp.API.csproj -c Release -o out
+# 2. Buscamos cualquier archivo .csproj y restauramos
+RUN dotnet restore
+
+# 3. Publicamos el proyecto buscando el archivo .csproj dinámicamente
+RUN dotnet publish **/TurnosApp.API.csproj -c Release -o out
 
 # Imagen de ejecución
 FROM mcr.microsoft.com/dotnet/aspnet:8.0
 WORKDIR /app
 COPY --from=build /app/out .
 
-# Ejecuta la DLL que está dentro de la carpeta out
+# Ejecutamos la DLL (usando el nombre exacto de tu salida)
 ENTRYPOINT ["dotnet", "TurnosApp.API.dll"]
