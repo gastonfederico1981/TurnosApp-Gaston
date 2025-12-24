@@ -1,9 +1,9 @@
-using Microsoft.EntityFrameworkCore;
-using TurnosApp.Core;
+using TurnosApp.Core.Entities;
 using TurnosApp.Core.Interfaces;
 using TurnosApp.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
 
-namespace TurnosApp.Infrastructure.Services
+namespace TurnosApp.Infrastructure.Services 
 {
     public class TurnoService : ITurnoService
     {
@@ -14,31 +14,21 @@ namespace TurnosApp.Infrastructure.Services
             _context = context;
         }
 
-        // 1. Implementación de la lista para el doctor
-        public async Task<IEnumerable<Turno>> GetTurnosByDoctorAsync(int doctorId)
-        {
-            return await _context.Turnos
-                .Where(t => t.DoctorId == doctorId && t.Estado == "PENDIENTE")
-                .ToListAsync();
-        }
+        public async Task<IEnumerable<Turno>> GetTurnosAsync() 
+            => await _context.Turnos.ToListAsync();
 
-        // 2. Implementación para registrar turnos (Swagger)
-        public async Task<Turno> RegisterTurnoAsync(Turno turno)
-        {
-            _context.Turnos.Add(turno);
-            await _context.SaveChangesAsync();
-            return turno;
-        }
+        public async Task<Turno?> GetTurnoByIdAsync(int id) 
+            => await _context.Turnos.FindAsync(id);
 
-        // 3. Implementación para atender (Botón Llamar)
-        public async Task<bool> AtenderTurnoAsync(int id)
+        // Esta es la pieza clave para tu idea de la Historia Clínica
+        public async Task ActualizarHistoriaClinicaAsync(int id, string url)
         {
             var turno = await _context.Turnos.FindAsync(id);
-            if (turno == null) return false;
-
-            turno.Estado = "EN_CONSULTA";
-            await _context.SaveChangesAsync();
-            return true;
+            if (turno != null)
+            {
+                turno.HistoriaClinicaUrl = url;
+                await _context.SaveChangesAsync();
+            }
         }
     }
 }

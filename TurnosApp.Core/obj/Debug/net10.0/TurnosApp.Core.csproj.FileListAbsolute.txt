@@ -5,6 +5,7 @@ C:\Users\gaston carranza\OneDrive\Desktop\TurnosApp\TurnosApp.Core\obj\Debug\net
 C:\Users\gaston carranza\OneDrive\Desktop\TurnosApp\TurnosApp.Core\obj\Debug\net10.0\TurnosApp.Core.AssemblyInfoInputs.cache
 C:\Users\gaston carranza\OneDrive\Desktop\TurnosApp\TurnosApp.Core\obj\Debug\net10.0\TurnosApp.Core.AssemblyInfo.cs
 C:\Users\gaston carranza\OneDrive\Desktop\TurnosApp\TurnosApp.Core\obj\Debug\net10.0\TurnosApp.Core.csproj.CoreCompileInputs.cache
+C:\Users\gaston carranza\OneDrive\Desktop\TurnosApp\TurnosApp.Core\obj\Debug\net10.0\TurnosApp.Core.sourcelink.json
 C:\Users\gaston carranza\OneDrive\Desktop\TurnosApp\TurnosApp.Core\obj\Debug\net10.0\TurnosApp.Core.dll
 C:\Users\gaston carranza\OneDrive\Desktop\TurnosApp\TurnosApp.Core\obj\Debug\net10.0\refint\TurnosApp.Core.dll
 C:\Users\gaston carranza\OneDrive\Desktop\TurnosApp\TurnosApp.Core\obj\Debug\net10.0\TurnosApp.Core.pdb

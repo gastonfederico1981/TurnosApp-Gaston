@@ -1,21 +1,17 @@
 using System;
 using System.Collections.Generic;
-using TurnosApp.Core; // <--- ESTA LÍNEA ES VITAL para que encuentre 'Turno'
+using System.Linq;
+using TurnosApp.Core.Entities; // <--- ESTA LÍNEA ES LA QUE FALTA Y ARREGLA EL ERROR
 
 namespace TurnosApp.Core.Services
 {
     public class AlgoritmoEsperaService
     {
-        public void CalcularTiempoEspera(Turno turnoActual, List<Turno> otrosTurnos, string especialidad)
+        // Tu método que calcula el tiempo de espera
+        public int CalcularTiempoEstimado(IEnumerable<Turno> turnosRestantes)
         {
-            // 1. Definimos tiempo base por especialidad
-            double minutosBase = (especialidad == "Cardiología") ? 20.0 : 15.0;
-            
-            // 2. Lógica: (cantidad de personas antes + 1) * tiempo base
-            double totalMinutos = (otrosTurnos.Count + 1) * minutosBase;
-            
-            // 3. Guardamos el resultado como entero (int)
-            turnoActual.TiempoEsperaEstimado = (int)totalMinutos;
+            // Lógica del algoritmo (ejemplo: 15 mins por turno)
+            return turnosRestantes.Count() * 15;
         }
     }
 }

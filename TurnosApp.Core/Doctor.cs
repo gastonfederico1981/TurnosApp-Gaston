@@ -1,14 +1,16 @@
 using System.Collections.Generic;
 
-namespace TurnosApp.Core
+namespace TurnosApp.Core.Entities
 {
     public class Doctor
     {
         public int Id { get; set; }
         public string Nombre { get; set; } = string.Empty;
-        public string Especialidad { get; set; } = string.Empty;
         
-        // Relación inversa: Un doctor tiene muchos turnos
+        // ESTAS DOS PROPIEDADES SON LAS QUE FALTAN:
+        public string Usuario { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
+        
         public List<Turno> Turnos { get; set; } = new List<Turno>();
     }
 }

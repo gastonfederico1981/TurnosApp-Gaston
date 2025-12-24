@@ -1,26 +1,27 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
-using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration; // <--- ESENCIAL
+using Microsoft.Extensions.Configuration.Json; // <--- ESENCIAL
 using System.IO;
+using TurnosApp.Infrastructure.Data;
 
-namespace TurnosApp.Infrastructure.Data
+namespace TurnosApp.Infrastructure
 {
-    // Clase necesaria para que 'dotnet ef' pueda construir el DbContext en tiempo de diseño
     public class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<TurnosDbContext>
     {
         public TurnosDbContext CreateDbContext(string[] args)
         {
+            // 1. Configurar para leer el appsettings.json de la API
             IConfigurationRoot configuration = new ConfigurationBuilder()
-                .SetBasePath(Directory.GetCurrentDirectory())
-                // Si la configuracion está en el proyecto API, ajusta la ruta
-                .AddJsonFile("appsettings.json", optional: false) 
+                .SetBasePath(Path.Combine(Directory.GetCurrentDirectory(), "../TurnosApp.API"))
+                .AddJsonFile("appsettings.json")
                 .Build();
 
             var builder = new DbContextOptionsBuilder<TurnosDbContext>();
-
-            // ** LA CORRECCIÓN CLAVE: USAR UseSqlite EN LUGAR DE UseNpgsql **
             var connectionString = configuration.GetConnectionString("DefaultConnection");
-            builder.UseSqlite(connectionString);
+
+            // 2. CAMBIO CRUCIAL: Usar Npgsql (PostgreSQL) en lugar de UseSqlite
+            builder.UseNpgsql(connectionString);
 
             return new TurnosDbContext(builder.Options);
         }
