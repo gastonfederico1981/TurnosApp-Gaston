@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>WaitLess - Acceso Profesional</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        :root {
+            --primary: #2ecc71;
+            --dark: #1a252f;
+            --dark-light: #2c3e50;
+            --white: #ecf0f1;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: var(--dark);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            color: var(--white);
+        }
+
+        .login-card {
+            background: var(--dark-light);
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .login-card h1 {
+            margin-bottom: 10px;
+            font-size: 2rem;
+        }
+
+        .login-card h1 span { color: var(--primary); }
+
+        .login-card p {
+            color: #bdc3c7;
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            text-align: left;
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #bdc3c7;
+            font-size: 0.9rem;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #3e5a70;
+            background: #1a252f;
+            color: white;
+            box-sizing: border-box;
+            font-size: 1rem;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background: var(--primary);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: 0.3s;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background: #27ae60;
+            transform: translateY(-2px);
+        }
+
+        #mensaje-error {
+            color: #e74c3c;
+            margin-top: 15px;
+            font-size: 0.9rem;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="login-card">
+    <h1>Wait<span>Less</span></h1>
+    <p>Acceso para Profesionales</p>
+
+    <div class="form-group">
+        <label>Usuario</label>
+        <input type="text" id="usuario" placeholder="Ingrese su usuario">
+    </div>
+
+    <div class="form-group">
+        <label>Contraseña</label>
+        <input type="password" id="password" placeholder="••••••••">
+    </div>
+
+    <button onclick="iniciarSesion()">Ingresar al Panel</button>
+    
+    <div id="mensaje-error">❌ Usuario o contraseña incorrectos</div>
+</div>
+
+<script>
+    async function iniciarSesion() {
+        const user = document.getElementById('usuario').value;
+        const pass = document.getElementById('password').value;
+        const errorDiv = document.getElementById('mensaje-error');
+
+        try {
+           // En tu login.html, dentro de la función iniciarSesion:
+const response = await fetch('http://localhost:5198/api/auth/login', {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ 
+        Usuario: user,   // Asegúrate: 'U' mayúscula
+        Password: pass   // Asegúrate: 'P' mayúscula
+    })
+});
+            if (response.ok) {
+                const data = await response.json();
+                
+                // Guardamos los datos en el navegador
+                localStorage.setItem('doctorToken', data.token);
+                localStorage.setItem('doctorNombre', data.nombre);
+                
+                // Redirigimos al monitor
+                window.location.href = 'monitor.html';
+            } else {
+                errorDiv.style.display = 'block';
+            }
+        } catch (error) {
+            alert("Error de conexión con el servidor. ¿Está corriendo la API?");
+        }
+    }
+
+    // Permitir ingresar con la tecla Enter
+    document.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') iniciarSesion();
+    });
+</script>
+
+</body>
+</html>

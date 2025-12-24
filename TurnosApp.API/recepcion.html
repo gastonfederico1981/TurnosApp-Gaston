@@ -62,65 +62,38 @@
     // URL BASE: Apunta al controlador funcional 'Doctor'
     const API_BASE = 'http://localhost:5192/api/Doctor'; 
 
-    async function enviarTurno() {
-        const nombreInput = document.getElementById('nombre');
-        const telInput = document.getElementById('tel');
-        const docIdInput = document.getElementById('docId');
-        
-        // 1. Validación simple
-        if (!nombreInput.value) {
-            alert("El nombre del paciente es obligatorio.");
-            return;
+ async function registrarTurno() {
+    // 1. Capturar los datos del formulario
+    const nombre = document.getElementById('nombre').value;
+    const telefono = document.getElementById('telefono').value;
+
+    const nuevoTurno = {
+        pacienteNombre: nombre,
+        pacienteTelefono: telefono,
+        motivo: "Consulta General" // Puedes agregar un input para esto
+    };
+
+    try {
+        // 2. Enviar a la API
+        const response = await fetch(`${CONFIG.API_URL}/turnos`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(nuevoTurno)
+        });
+
+        if (response.ok) {
+            const resultado = await response.json();
+            alert(`¡Turno registrado! Tu código es: ${resultado.tokenAcceso || 'Exitoso'}`);
+            // Limpiar formulario
+            document.getElementById('formTurno').reset();
+        } else {
+            alert("Error al registrar el turno.");
         }
-
-        // 2. Preparar el objeto de datos (Recuperando el valor de los campos)
-        const data = {
-            pacienteNombre: nombreInput.value,
-            pacienteTelefono: telInput.value,
-            doctorId: parseInt(docIdInput.value)
-        };
-
-        try {
-            // 3. ENVIAR POST a la ruta de registro
-            const res = await fetch(`${API_BASE}/registrar`, { 
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            });
-
-            if(res.ok) {
-                // 4. Leer la respuesta de la API (contiene el Token)
-                const nuevoTurno = await res.json(); 
-
-                // 5. Mostrar el Token al usuario en el mensaje de éxito
-                const msgDiv = document.getElementById('msg');
-                msgDiv.style.backgroundColor = '#d4edda'; // Color de éxito
-                msgDiv.innerHTML = `
-                    ¡Paciente ingresado correctamente! 
-                    <br>Su **TOKEN DE ACCESO** es: 
-                    <strong style="font-size: 1.1em; color: #155724;">${nuevoTurno.tokenAcceso}</strong>
-                `;
-                msgDiv.style.display = 'block';
-                
-                // 6. Limpiar campos
-                nombreInput.value = '';
-                telInput.value = '';
-                
-                // Ocultar mensaje después de 8 segundos para dar tiempo a anotar el token
-                setTimeout(() => msgDiv.style.display = 'none', 8000); 
-
-            } else {
-                // Manejo de errores HTTP
-                const errorText = await res.text();
-                console.error('Error HTTP:', res.status, errorText);
-                alert(`Error al registrar (Código ${res.status}). Revisa la consola (F12).`);
-            }
-        } catch (error) {
-            // Manejo de errores de red
-            console.error('Error de red al enviar turno:', error);
-            alert('❌ No se pudo conectar con la API. ¿Está encendida?');
-        }
+    } catch (error) {
+        console.error("Error de conexión:", error);
+        alert("No se pudo conectar con el servidor.");
     }
+}
 
     // Nota: Las funciones de agenda (cargarAgenda, confirmar) están comentadas porque no son necesarias para este proyecto.
 </script>

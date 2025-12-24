@@ -1,66 +1,42 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Tokens;
-using System;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
-using TurnosApp.Core;
+using Microsoft.EntityFrameworkCore;
+using TurnosApp.Infrastructure.Data;
 
 namespace TurnosApp.API.Controllers
 {
-    [ApiController]
     [Route("api/[controller]")]
+    [ApiController]
     public class AuthController : ControllerBase
     {
-        private readonly IConfiguration _config;
+        private readonly TurnosDbContext _context;
 
-        public AuthController(IConfiguration config)
+        public AuthController(TurnosDbContext context)
         {
-            _config = config;
+            _context = context;
         }
 
         [HttpPost("login")]
-        public IActionResult Login([FromBody] LoginDto login)
+        public async Task<IActionResult> Login([FromBody] LoginRequest login)
         {
-            // Verificación simple para demo (DoctorId: 1, Pass: 1234)
-            if (login.Username == "admin" && login.Password == "1234")
+            var doctor = await _context.Doctores
+                .FirstOrDefaultAsync(d => d.Usuario.ToLower() == login.Usuario.ToLower() && d.Password == login.Password);
+
+            if (doctor == null)
             {
-                var token = GenerateJwtToken(login.Username);
-                return Ok(new { token });
+                return Unauthorized(new { mensaje = "Usuario o contraseña incorrectos" });
             }
 
-            return Unauthorized("Usuario o contraseña incorrectos");
-        }
-
-        private string GenerateJwtToken(string username)
-        {
-            // CORRECCIÓN DEL ERROR CS1503:
-            // Se usa Encoding.UTF8.GetBytes sobre el string de la clave
-            var keyString = _config["Jwt:Key"] ?? "Clave_Super_Secreta_De_Prueba_12345";
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(keyString));
-            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
-            var claims = new[]
-            {
-                new Claim(ClaimTypes.Name, username),
-                new Claim("DoctorId", "1") // En una app real, esto vendría de la DB
-            };
-
-            var token = new JwtSecurityToken(
-                issuer: _config["Jwt:Issuer"],
-                audience: _config["Jwt:Audience"],
-                claims: claims,
-                expires: DateTime.Now.AddDays(1),
-                signingCredentials: creds
-            );
-
-            return new JwtSecurityTokenHandler().WriteToken(token);
+            return Ok(new { 
+                id = doctor.Id, 
+                nombre = doctor.Nombre,
+                mensaje = "Bienvenido al sistema WaitLess" 
+            });
         }
     }
 
-    public class LoginDto
+    public class LoginRequest
     {
-        public string Username { get; set; } = string.Empty;
+        public string Usuario { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
     }
 }

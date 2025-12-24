@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>WaitLess - Gestión de Fila</title>
+    <style>
+        body { font-family: sans-serif; max-width: 600px; margin: 20px auto; padding: 20px; background-color: #f4f7f6; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        button { background: #007bff; color: white; border: none; padding: 12px; width: 100%; border-radius: 4px; cursor: pointer; font-size: 16px; }
+        button:hover { background: #0056b3; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 12px; border-bottom: 1px solid #ddd; text-align: left; }
+        .btn-atender { background: #28a745; padding: 5px 10px; font-size: 12px; width: auto; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>📟 Registro de Fila</h2>
+    <div class="form-group">
+        <label>Paciente:</label>
+        <input type="text" id="pacienteNombre" placeholder="Nombre completo">
+    </div>
+    <div class="form-group">
+        <label>Teléfono:</label>
+        <input type="text" id="pacienteTelefono" placeholder="Ej: 11...">
+    </div>
+    <div class="form-group">
+        <label>Hora de llegada:</label>
+        <input type="datetime-local" id="fechaHoraInput">
+    </div>
+    <button onclick="registrarTurno()">Anotar en la Fila</button>
+</div>
+
+<div class="card" style="margin-top: 20px;">
+    <h3>👥 Pacientes en Espera</h3>
+    <table id="tablaTurnos">
+        <thead>
+            <tr>
+                <th>Paciente</th>
+                <th>Llegada</th>
+                <th>Acción</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+</div>
+
+<script>
+    const API_URL = "http://localhost:5080/api/turnos";
+
+    // 1. Poner la fecha actual al cargar
+    window.onload = () => {
+        const ahora = new Date();
+        ahora.setMinutes(ahora.getMinutes() - ahora.getTimezoneOffset());
+        document.getElementById('fechaHoraInput').value = ahora.toISOString().slice(0, 16);
+        cargarTurnos();
+    };
+
+    async function cargarTurnos() {
+        try {
+            const res = await fetch(API_URL);
+            const datos = await res.json();
+            const tbody = document.querySelector("#tablaTurnos tbody");
+            tbody.innerHTML = "";
+            datos.forEach(t => {
+                const hora = new Date(t.fechaHora).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                tbody.innerHTML += `
+                    <tr>
+                        <td><strong>${t.pacienteNombre}</strong></td>
+                        <td>${hora} hs</td>
+                        <td><button class="btn-atender" onclick="atenderPaciente(${t.id})">Llamar</button></td>
+                    </tr>`;
+            });
+        } catch (e) { console.error("Error al cargar:", e); }
+    }
+
+    async function registrarTurno() {
+        const nombre = document.getElementById('pacienteNombre').value;
+        const telefono = document.getElementById('pacienteTelefono').value;
+        const fechaVal = document.getElementById('fechaHoraInput').value;
+
+        if (!nombre) { alert("El nombre es obligatorio"); return; }
+
+        const nuevoTurno = {
+            pacienteNombre: nombre,
+            pacienteTelefono: telefono,
+            fechaHora: new Date(fechaVal).toISOString(),
+            estado: "Pendiente",
+            doctorId: 1
+        };
+
+        try {
+            const response = await fetch(API_URL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(nuevoTurno)
+            });
+
+            if (response.ok) {
+                document.getElementById('pacienteNombre').value = "";
+                document.getElementById('pacienteTelefono').value = "";
+                cargarTurnos();
+            } else {
+                alert("Error en el servidor");
+            }
+        } catch (err) {
+            alert("Sin conexión con la API");
+        }
+    }
+
+    async function atenderPaciente(id) {
+        try {
+            await fetch(`${API_URL}/${id}`, { method: "DELETE" });
+            cargarTurnos();
+        } catch (e) { alert("No se pudo eliminar"); }
+    }
+</script>
+
+</body>
+</html>
