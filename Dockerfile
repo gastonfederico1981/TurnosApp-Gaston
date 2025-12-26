@@ -1,21 +1,19 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /app
 
-# Copiamos todo el contenido
+# Copiamos todo (Core, Infra y API)
 COPY . ./
 
-# Restauramos dependencias buscando el archivo .csproj donde sea que esté
+# Restauramos todos los proyectos a la vez
 RUN dotnet restore
 
-# Publicamos el proyecto. 
-# Si tu carpeta se llama distinto, este comando la encontrará igual.
-RUN dotnet publish **/*.csproj -c Release -o out
+# Publicamos la API (Asegurate que el nombre coincida con el archivo que encuentres)
+RUN dotnet publish **/TurnosApp.API.csproj -c Release -o out
 
 # Imagen de ejecución
 FROM mcr.microsoft.com/dotnet/aspnet:8.0
 WORKDIR /app
 COPY --from=build /app/out .
 
-# Iniciamos la aplicación
-# Usamos un comando dinámico para que no falle por el nombre de la DLL
+# Arrancamos la API
 ENTRYPOINT ["sh", "-c", "dotnet $(ls *.dll | head -n 1)"]
