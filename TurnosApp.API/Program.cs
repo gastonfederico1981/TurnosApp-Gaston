@@ -22,4 +22,5 @@ Console.WriteLine("-------------------------------------------");
 Console.WriteLine("🚀 LA API ESTÁ PREPARADA EN EL PUERTO 5080");
 Console.WriteLine("-------------------------------------------");
 
-app.Run("http://localhost:5080");
+var port = Environment.GetEnvironmentVariable("PORT") ?? "5080";
+app.Run($"http://0.0.0.0:{port}"); // ✅ ESTO ABRE LA PUERTA AL MUNDO
