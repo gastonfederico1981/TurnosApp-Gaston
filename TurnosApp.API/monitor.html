@@ -136,8 +136,8 @@
 </div>
 
 <script>
-    const API_BASE = 'http://localhost:5198/api/Turnos';
-
+    // Cambiá la URL vieja por la nueva:
+const url = 'https://turnosapp-gaston-production.up.railway.app/api/Turnos';
     // 1. SEGURIDAD: Verificar sesión
     document.addEventListener("DOMContentLoaded", () => {
         const token = localStorage.getItem('doctorToken');
